@@ -14,8 +14,7 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 key = os.getenv("key")
-print(BOT_TOKEN)
-print(key)
+
 
 last_update_id = 0
 last_sent_update_id = 0
@@ -42,7 +41,7 @@ def sendMessage(id, shrt_url, message_id):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {"chat_id": id, "text": shrt_url, "reply_to_message_id": message_id}
     r = requests.post(url, json=payload)
-    print(r.json())
+ 
 
 
 def isValidUrl(msg):
@@ -68,7 +67,6 @@ def main():
                     url = "https://api.tinyurl.com/create?api_token={key}"
 
                     payload = json.dumps({"url": message_part})
-                    print(payload)
                     headers = {
                         "Content-Type": "application/json",
                         "Authorization": f"Bearer {key}",
@@ -77,7 +75,6 @@ def main():
                     response = requests.post(url, headers=headers, data=payload)
                     shrt_url = response.json()["data"]["tiny_url"]
 
-                    print(shrt_url)
                     if update_id != last_sent_update_id:
                         sendMessage(
                             id,
@@ -93,7 +90,6 @@ def main():
                         )
                     last_sent_update_id = update_id
         except Exception as e:
-            print(f"Error: {e}")
             sendMessage(id, f"Error: {e}", reply_id)
 
         time.sleep(2)
