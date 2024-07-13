@@ -1,16 +1,12 @@
+
 import json
 import requests
 import time
+import datetime
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
-
-
-# assinging last_update_id, last_sent_update_id variable and later used so that reply to user not repeated
-# shorten.rest provides it's api service
-# telegram BOT api have varoius things in getUpdates but i took only 4-5 as per requirment
-
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 key = os.getenv("key")
@@ -37,21 +33,58 @@ def get_updates():
         print(f"Error fetching updates: {e}")
 
 
-def sendMessage(id, shrt_url, message_id):
+def sendMessage(id, shrt_url, message_id=None):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {"chat_id": id, "text": shrt_url, "reply_to_message_id": message_id}
     r = requests.post(url, json=payload)
- 
+  )
 
 
 def isValidUrl(msg):
     return msg.startswith("http") or msg.startswith("Http")
 
 
+def fromapi(message_part, key):
+    url = "https://api.tinyurl.com/create?api_token={key}"
+
+    payload = json.dumps({"url": message_part})
+ 
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {key}",
+    }
+
+    response = requests.post(url, headers=headers, data=payload)
+    shrt_url = response.json()["data"]["tiny_url"]
+    return shrt_url
+
+
+user_limit = {}
+
+
+def user_lmt(id):
+    now = datetime.datetime.now()
+    if id in user_limit:
+        if user_limit[id]["count"] >= 5:
+            time_diff = datetime.timedelta(days=1) - (now - user_limit[id]["timestamp"])
+            time_remaining = time_diff.seconds // 3600
+            if now - user_limit[id]["timestamp"] < datetime.timedelta(days=1):
+                return (
+                    False,
+                    f"🙂 Thank you.\nThis is an experimental BOT, and the admin has set a daily limit of 5 successful requests per user\n\n{time_remaining} Hour ",
+                )
+            else:
+                user_limit[id] = {"count": 1, "timestamp": now}
+        else:
+            user_limit[id]["count"] += 1
+    else:
+        user_limit[id] = {"count": 1, "timestamp": now}
+    return True, ""
+
+
 def main():
     global last_update_id
     global last_sent_update_id
-
     while True:
         try:
             get_updt = get_updates()
@@ -62,40 +95,31 @@ def main():
                 id = get_updt[1]
                 first_name = get_updt[2]
                 reply_id = get_updt[3]
-
                 if isValidUrl(message_part):
-                    url = "https://api.tinyurl.com/create?api_token={key}"
-
-                    payload = json.dumps({"url": message_part})
-                    headers = {
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {key}",
-                    }
-
-                    response = requests.post(url, headers=headers, data=payload)
-                    shrt_url = response.json()["data"]["tiny_url"]
-
-                    if update_id != last_sent_update_id:
+                    allowed, msg = user_lmt(id)
+                    if allowed:
+                        shrt_url = fromapi(message_part, key)
                         sendMessage(
                             id,
                             f"This is your shorten link🔗 👇\n\n{shrt_url}",
                             reply_id,
                         )
-                else:
-                    if update_id != last_sent_update_id:
-                        sendMessage(
-                            id,
-                            f'Hello, {first_name}\n\n❌ Wrong URL for this Bot\n\n☺️ Please enter a valid URL which starts with 🔐"https" ',
-                            reply_id,
-                        )
-                    last_sent_update_id = update_id
-        except Exception as e:
-            sendMessage(id, f"Error: {e}", reply_id)
+                        
 
+                    else:
+                        sendMessage(id, msg)
+                else:
+                    sendMessage(
+                        id,
+                        f'Hello, {first_name}\n\n❌ Wrong URL for this Bot\n\n☺ Please enter a valid URL which starts with 🔐"https" ',
+                        reply_id,
+                    )
+
+                last_sent_update_id = update_id
+        except Exception as e:
+            print(f"Error: {e}")
         time.sleep(2)
 
-
-# the below line is written so that if this script run as module then only the whole code run once and not every time.
 
 if __name__ == "__main__":
     main()
