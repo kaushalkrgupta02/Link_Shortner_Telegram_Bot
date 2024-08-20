@@ -37,7 +37,7 @@ def sendMessage(id, shrt_url, message_id=None):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {"chat_id": id, "text": shrt_url, "reply_to_message_id": message_id}
     r = requests.post(url, json=payload)
-  )
+  
 
 
 def isValidUrl(msg):
