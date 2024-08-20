@@ -5,12 +5,14 @@ import time
 import datetime
 from dotenv import load_dotenv
 import os
+import re
 
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 key = os.getenv("key")
-
+print(BOT_TOKEN)
+print(key)
 
 last_update_id = 0
 last_sent_update_id = 0
@@ -37,18 +39,27 @@ def sendMessage(id, shrt_url, message_id=None):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {"chat_id": id, "text": shrt_url, "reply_to_message_id": message_id}
     r = requests.post(url, json=payload)
-  
+    print(r.json())
 
 
 def isValidUrl(msg):
-    return msg.startswith("http") or msg.startswith("Http")
+    regex = re.compile(
+        r"^https?://"  # http:// or https://
+        r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"  # domain...
+        r"localhost|"  # localhost...
+        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
+        r"(?::\d+)?"  # optional port
+        r"(?:/?|[/?]\S+)$",
+        re.IGNORECASE,
+    )
+    return msg is not None and regex.search(msg)
 
 
 def fromapi(message_part, key):
     url = "https://api.tinyurl.com/create?api_token={key}"
 
     payload = json.dumps({"url": message_part})
- 
+    print(payload)
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {key}",
@@ -71,7 +82,7 @@ def user_lmt(id):
             if now - user_limit[id]["timestamp"] < datetime.timedelta(days=1):
                 return (
                     False,
-                    f"🙂 Thank you.\nThis is an experimental BOT, and the admin has set a daily limit of 5 successful requests per user\n\n{time_remaining} Hour ",
+                    f"🙂 Thank you.\nThis is an experimental BOT, and the admin has set a daily limit of 5 successful requests per user\n\n Time Reamining: {time_remaining} Hour ",
                 )
             else:
                 user_limit[id] = {"count": 1, "timestamp": now}
@@ -99,12 +110,15 @@ def main():
                     allowed, msg = user_lmt(id)
                     if allowed:
                         shrt_url = fromapi(message_part, key)
+                        print(shrt_url)
                         sendMessage(
                             id,
                             f"This is your shorten link🔗 👇\n\n{shrt_url}",
                             reply_id,
                         )
-                        
+                        print("\n")
+                        print(user_limit)
+                        print("\n")
 
                     else:
                         sendMessage(id, msg)
@@ -118,6 +132,7 @@ def main():
                 last_sent_update_id = update_id
         except Exception as e:
             print(f"Error: {e}")
+            # sendMessage(id, f"Error: {e}", reply_id)
         time.sleep(2)
 
 
