@@ -1,11 +1,10 @@
-
 import json
 import requests
 import time
 import datetime
 from dotenv import load_dotenv
 import os
-import re
+
 
 load_dotenv()
 
@@ -39,20 +38,11 @@ def sendMessage(id, shrt_url, message_id=None):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {"chat_id": id, "text": shrt_url, "reply_to_message_id": message_id}
     r = requests.post(url, json=payload)
-    print(r.json())
+    # print(r.json())
 
 
 def isValidUrl(msg):
-    regex = re.compile(
-        r"^https?://"  # http:// or https://
-        r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"  # domain...
-        r"localhost|"  # localhost...
-        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
-        r"(?::\d+)?"  # optional port
-        r"(?:/?|[/?]\S+)$",
-        re.IGNORECASE,
-    )
-    return msg is not None and regex.search(msg)
+    return msg.startswith("http") or msg.startswith("Http")
 
 
 def fromapi(message_part, key):
@@ -70,19 +60,22 @@ def fromapi(message_part, key):
     return shrt_url
 
 
-user_limit = {}
+user_limit = {"1":"1269372875"}
 
 
 def user_lmt(id):
     now = datetime.datetime.now()
     if id in user_limit:
-        if user_limit[id]["count"] >= 5:
+        if user_limit[id]["count"] > 5:
+            print(user_limit[id]["timestamp"])
             time_diff = datetime.timedelta(days=1) - (now - user_limit[id]["timestamp"])
-            time_remaining = time_diff.seconds // 3600
+            hour = time_diff.seconds // 3600
+            min =  (time_diff.seconds // 60) % 60
+            sec = time_diff.seconds % 60
             if now - user_limit[id]["timestamp"] < datetime.timedelta(days=1):
                 return (
                     False,
-                    f"🙂 Thank you.\nThis is an experimental BOT, and the admin has set a daily limit of 5 successful requests per user\n\n Time Reamining: {time_remaining} Hour ",
+                    f"🙂 Thank you.\nThis is an experimental BOT, and the admin has set a daily limit of 5 successful requests per user\n\n Time Remaining : {hour}:{min}:{sec} ",
                 )
             else:
                 user_limit[id] = {"count": 1, "timestamp": now}
