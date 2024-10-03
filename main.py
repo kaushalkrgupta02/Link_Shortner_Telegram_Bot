@@ -17,7 +17,7 @@ last_update_id = 0
 last_sent_update_id = 0
 
 
-def get_updates():
+async def get_updates():
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
 
     try:
@@ -86,7 +86,7 @@ def user_lmt(id):
     return True, ""
 
 
-def main():
+async def main():
     global last_update_id
     global last_sent_update_id
     while True:
