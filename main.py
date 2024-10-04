@@ -60,7 +60,7 @@ def fromapi(message_part, key):
     return shrt_url
 
 
-user_limit = {"1":"1269372875"}
+user_limit = {}
 
 
 def user_lmt(id):
