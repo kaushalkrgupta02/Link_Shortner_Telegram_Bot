@@ -1,6 +1,6 @@
 requests==2.32.3
 python-dotenv==1.0.1
-flask
+Flask
 Werkzeug
 gunicorn
 aiohttp
