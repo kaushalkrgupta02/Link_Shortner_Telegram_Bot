@@ -17,9 +17,9 @@ last_update_id = 0
 last_sent_update_id = 0
 
 
-def get_updates():
+def get_updates(offset=None):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-
+    params = {"offset": offset, "timeout": 5}
     try:
         response = requests.get(url)
         data = response.json()
